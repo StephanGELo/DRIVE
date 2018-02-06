@@ -1,6 +1,7 @@
 var Koa = require('koa');
 var Router = require('koa-router');
-const handler = require('./handler.js');
+var handler = require('./handler.js');
+var db = require('../database/dbConnection.js');
 
 var app = new Koa();
 var router = new Router();
