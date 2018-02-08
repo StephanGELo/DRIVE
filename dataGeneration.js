@@ -1,8 +1,8 @@
-var fs = require('fs');
+const fs = require('fs');
 
-var wstream = fs.createWriteStream('activeDriverData2.csv');
+//const wstream = fs.createWriteStream('activeDriverData2.csv');
 
-var cities = {
+const cities = {
   'San Francisco' : {
     lattitudes: [37.73, 37.83],
     longitudes: [122.37, 122.47]
@@ -27,23 +27,27 @@ var cities = {
   }
 }
 
-var timeFrame = {
+timeFrame = {
   'jan01' : 1514764800,
   'jan02' : 1514851200
 }
 
-var driverId = 2500000;
+const driverId = 2500000;
 
-var generateDriverIds = function() {
+const generateDriverIds = function() {
   return driverId += 1;
 }
 
-for (var k in cities) {
-  for (var i = 0; i < 500000; i++) {
-    var start = [(Math.random() * (cities[k]['lattitudes'][1] - cities[k]['lattitudes'][0]) + cities[k]['lattitudes'][0]).toFixed(2) * 1, (Math.random() * (cities[k]['lattitudes'][1] - cities[k]['lattitudes'][0]) + cities[k]['lattitudes'][0]).toFixed(2) * 1];
-    var time = (Math.random() * (timeFrame['jan02'] - timeFrame['jan01']) + timeFrame['jan01']).toFixed(0) * 1;
-    wstream.write(time + ';' + generateDriverIds() +';'+ JSON.stringify(start) + '\n');
+for (let k in cities) {
+  for (let i = 0; i < 500000; i++) {
+    let start = [(Math.random() * (cities[k]['lattitudes'][1] - cities[k]['lattitudes'][0]) + cities[k]['lattitudes'][0]).toFixed(2) * 1, (Math.random() * (cities[k]['lattitudes'][1] - cities[k]['lattitudes'][0]) + cities[k]['lattitudes'][0]).toFixed(2) * 1];
+    let time = (Math.random() * (timeFrame['jan02'] - timeFrame['jan01']) + timeFrame['jan01']).toFixed(0) * 1;
+    //wstream.write(time + ';' + generateDriverIds() +';'+ JSON.stringify(start) + '\n');
   }
 }
 
-wstream.end();
+//wstream.end();
+module.exports = {
+  timeFrame,
+  cities,
+}

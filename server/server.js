@@ -1,19 +1,28 @@
-var Koa = require('koa');
-var Router = require('koa-router');
-var handler = require('./handler.js');
-var db = require('../database/dbConnection.js');
+const newrelic = require('newrelic');
+const Koa = require('koa');
+//const bodyParser = require('koa-bodyparser');
+const Router = require('koa-router');
+const http = require('http');
+const handler = require('./handler.js');
+const db = require('../db-Cassandra/index.js');
+const request = require('request-promise');
+const rawBody = require('raw-body');
 
-var app = new Koa();
-var router = new Router();
+const app = new Koa();
+const router = new Router();
 
-router.get('/', (ctx, next) => {
-  // ctx.router available
-  console.log('here on line 9, in get Function')
-});
+// send list of active drivers to dispatch service
+router.get('/driverToDispatch/:time', handler.handlers.GET.getDriverToDispatch);
 
-app.use(async ctx => {
-  ctx.body = 'Hello0000 World';
-});
+// send list of active and inactive drivers to pricing service every one minute
+router.get('/driverStatusToPricing', handler.handlers.GET.getDriverStatusToPricing); //send both active and inactive drivers
+
+// get rideOffers from dispatch office for selecting driver and save the offer to db
+router.post('/rideOffersToDrivers', handler.handlers.POST.postRideOffersToDrivers);
+
+//update driver location & time if already exists or add as new driver if not in database (as per Fred's comments)
+router.put('driverlogin',handler.handlers.PUT.updateDriverRecord);
+
 
 app
   .use(router.routes())
@@ -22,12 +31,3 @@ app
 app.listen(3000, () =>  {
   console.log("Listening on port 3000")
 });
-
-
-
-
-
-
-
-
-
