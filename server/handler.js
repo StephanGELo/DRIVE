@@ -85,13 +85,16 @@ const handlers = {
     },
 
     // every 3600 seconds send a list of drivers to dispatch service
-    getDriverToDispatch : (ctx, next) => {
-      console.log("you are in handler @ line 57 time=", ctx.params.time);
+    getDriverToDispatch : async (ctx, next) => {
+      // console.log("you are in handler @ line 57 time=", ctx.params.time, ctx);
       return db.getActiveDrivers(ctx.params.time).then((drivers) => {
         if (drivers.length === 0) {
-          return ctx.status = 404;
         } else {
-          ctx.body = drivers;
+          ctx.set('content-type', 'application/json');
+          ctx.response.statusCode = 200;
+          ctx.body = JSON.stringify(drivers);
+
+
         }
         next();
       });
@@ -103,7 +106,7 @@ const handlers = {
       try {
         let activeDrivers = await db.getActiveDrivers(time);
         let inactiveDrivers = await db.getInactiveDrivers(time);
-        ctx.body = [activeDrivers, inactiveDrivers];
+        ctx.body = JSON.stringify([activeDrivers, inactiveDrivers]);
       } catch (err) {
         console.log('There is an error:', err.message);
       };
@@ -143,36 +146,3 @@ module.exports = {
   handlers,
   helpers,
 }
-
-// const riderid = 4379200;
-//   const time = 151478600;
-//   const drivers = [4941600];
-//   const end = [39.72999954223633, 39.70000076293945];
-//   const start = [40.66999816894531, 40.709999084472656];
-
-
-
-
-
- // 'San Francisco' : {
- //    lattitudes: [37.73, 37.83],
- //    longitudes: [122.37, 122.47]
- //  },
-
- //  'Seattle' : {
- //    lattitudes: [47.56, 47.66],
- //    longitudes: [122.28, 122.38]
- //  },
- //  'Los Angeles' : {
- //    lattitudes: [34, 35],
- //    longitudes: [122.37, 122.47]
- //  },
- //  'Miami' : {
- //    lattitudes: [25.71, 25.81],
- //    longitudes: [80.14, 80.24]
-
- //  },
- //  'New York' : {
- //    lattitudes: [40.66, 40.76],
- //    longitudes: [73.96, 74.04]
- //  }

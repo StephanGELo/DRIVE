@@ -19,14 +19,16 @@ app.use(bodyParser());
 router.get('/driverToDispatch/:time', handler.handlers.GET.getDriverToDispatch);
 
 // send list of active and inactive drivers to pricing service every one minute
-router.get('/driverStatusToPricing/:time', handler.handlers.GET.getDriverStatusToPricing); //send both active and inactive drivers
+router.get('/driverStatusToPricing/:time', handler.handlers.GET.getDriverStatusToPricing);
 
 // get rideOffers from dispatch office for selecting driver and save the offer to db
+// send both active and inactive drivers
 router.post('/rideOffersToDrivers', handler.handlers.POST.postRideOffersToDrivers);
 
-//update driver location & time if already exists or add as new driver if not in database (as per Fred's comments)
+// update driver location & time if already exists or add as new driver if not in database (as per Fred's comments)
 router.put('/driverlogin',handler.handlers.PUT.updateDriverRecord);
 
+// check if driver is in db as active, Delete from db if it is. Add driver as inactive.
 router.put('/driverlogOff',handler.handlers.PUT.updateDriverRecord);
 
 app
