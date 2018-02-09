@@ -7,22 +7,27 @@ const handler = require('./handler.js');
 const db = require('../db-Cassandra/index.js');
 const request = require('request-promise');
 const rawBody = require('raw-body');
+const bodyParser = require('koa-body-parser');
+
+
 
 const app = new Koa();
 const router = new Router();
+app.use(bodyParser());
 
 // send list of active drivers to dispatch service
 router.get('/driverToDispatch/:time', handler.handlers.GET.getDriverToDispatch);
 
 // send list of active and inactive drivers to pricing service every one minute
-router.get('/driverStatusToPricing', handler.handlers.GET.getDriverStatusToPricing); //send both active and inactive drivers
+router.get('/driverStatusToPricing/:time', handler.handlers.GET.getDriverStatusToPricing); //send both active and inactive drivers
 
 // get rideOffers from dispatch office for selecting driver and save the offer to db
 router.post('/rideOffersToDrivers', handler.handlers.POST.postRideOffersToDrivers);
 
 //update driver location & time if already exists or add as new driver if not in database (as per Fred's comments)
-router.put('driverlogin',handler.handlers.PUT.updateDriverRecord);
+router.put('/driverlogin',handler.handlers.PUT.updateDriverRecord);
 
+router.put('/driverlogOff',handler.handlers.PUT.updateDriverRecord);
 
 app
   .use(router.routes())

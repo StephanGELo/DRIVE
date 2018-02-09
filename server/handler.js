@@ -1,7 +1,9 @@
 
 const data = require('../dataGeneration.js');
 const Koa = require('koa');
-//const bodyParser = require('koa-bodyparser');
+const bodyParser = require('koa-body-parser');
+
+// app.use(bodyParser());
 const Router = require('koa-router');
 const http = require('http');
 const handler = require('./handler.js');
@@ -15,10 +17,28 @@ const helpers = {
   },
 
   getRandomLocation: () => {
-    const k = helpers.getRandomNum(5);
+    const cities =
+    [ {
+        'San Francisco' : { lattitudes: [37.73, 37.83],longitudes: [122.37, 122.47] }
+      },
+      {
+        'Seattle' : { lattitudes: [47.56, 47.66],longitudes: [122.28, 122.38] }
+      },
+      {
+        'Los Angeles' : { lattitudes: [34, 35],longitudes: [122.37, 122.47] }
+      },
+      {
+         'Miami' : { lattitudes: [25.71, 25.81],longitudes: [80.14, 80.24] }
+      },
+      {
+        'New York' : { lattitudes: [40.66, 40.76],longitudes: [73.96, 74.04] }
+      }
+    ];
+
+    const k = helpers.getRandomNum();
     return [
-    (Math.random() * (data.cities[k]['lattitudes'][1] - data.cities[k]['lattitudes'][0]) + data.cities[k]['lattitudes'][0]).toFixed(2) * 1,
-    (Math.random() * (data.cities[k]['lattitudes'][1] - data.cities[k]['lattitudes'][0]) + data.cities[k]['lattitudes'][0]).toFixed(2) * 1
+    (Math.random() * (cities[k]['lattitudes'][1] - cities[k]['lattitudes'][0]) + cities[k]['lattitudes'][0]).toFixed(2) * 1,
+    (Math.random() * (cities[k]['longitudes'][1] - cities[k]['longitudes'][0]) + cities[k]['longitudes'][0]).toFixed(2) * 1
     ];
   },
 
@@ -27,16 +47,24 @@ const helpers = {
   },
 
   fetchData: () => {
+    const offers = [];
+    let id = 10000000;
 
   // check on data type - a possible way is to save the value to another variable.
-    return {
-      'riderid': this.getRandomNum(5000000),
-      'time': this.generateRandomTime(),
-      'drivers': [this.getRandomNum(i*0.25), this.getRandomNum(i),this.getRandomNum(i*0.75)],
+    let match = {
+      'riderid': helpers.getRandomNum(5000000),
+      'time': helpers.generateRandomTime(),
+      'drivers': [helpers.getRandomNum(id*0.25), helpers.getRandomNum(id), helpers.getRandomNum(id*0.75)],
 
-      'end': getRandomLocation(),
-      'start': getRandomLocation(),
+      'end': helpers.getRandomLocation(),
+      'start': helpers.getRandomLocation(),
     }
+
+    for (let i = 0; i < 10; i++) {
+      offers.push(match);
+    }
+
+    return offers;
   },
 
 } // end of helpers
@@ -45,15 +73,21 @@ const handlers = {
 
   GET: {
     // select a driver from the list randomly
-    selectDriver: (rideOffer) => {
-      let drivers = rideOffer.drivers;
-      let newIndex = helpers.getRandomNum(drivers.length);
-      console.log("In handlers @ line 15 newIndex=", newIndex);
-      const aptDriver = drivers[newIndex];
+    selectDriver: (rideOffers) => {
+      return rideOffers.map((rideOffer) => {
+        let drivers = rideOffer.drivers;
+        let newIndex = helpers.getRandomNum(drivers.length);
+        console.log("In handlers @ line 15 newIndex=", newIndex);
+        const aptDriver = drivers[newIndex];
+        rideOffer.drivers = [aptDriver];
+      return rideOffer;
+      });
     },
 
+    // every 3600 seconds send a list of drivers to dispatch service
     getDriverToDispatch : (ctx, next) => {
-      return db.getActiveDrivers(ctx.params.time).then(function(drivers) {
+      console.log("you are in handler @ line 57 time=", ctx.params.time);
+      return db.getActiveDrivers(ctx.params.time).then((drivers) => {
         if (drivers.length === 0) {
           return ctx.status = 404;
         } else {
@@ -63,16 +97,16 @@ const handlers = {
       });
     },
 
-    getDriverStatusToPricing : (ctx, next) => {
-      db.getDriverStatus(ctx.params.time).then(function(drivers) {
-         if (drivers.length === 0) {
-          return ctx.status = 404;
-         } else {
-          var status = {};
-
-          ctx.body = drivers;
-         }
-      });
+    // every 3600 seconds send pricing a list of active and inactive drivers
+    getDriverStatusToPricing : async (ctx, next) => {
+      let time = ctx.params.time;
+      try {
+        let activeDrivers = await db.getActiveDrivers(time);
+        let inactiveDrivers = await db.getInactiveDrivers(time);
+        ctx.body = [activeDrivers, inactiveDrivers];
+      } catch (err) {
+        console.log('There is an error:', err.message);
+      };
     },
 
 
@@ -80,7 +114,18 @@ const handlers = {
 
  POST: {
     postRideOffersToDrivers: (ctx, next) => {
+      const rideOffers = handlers.GET.selectDriver(ctx.request.body);
 
+      console.log("on line 119", rideOffers);
+
+      try {
+        rideOffers.forEach((rideOffer) => {
+          db.saveRiderOffers(rideOffer);
+        });
+
+      } catch (err) {
+        console.log('There is an error:', err.message);
+      };
     },
 
   }, // end of POST
@@ -91,7 +136,8 @@ const handlers = {
     }
   }
 
-};
+
+}
 
 module.exports = {
   handlers,
@@ -103,3 +149,30 @@ module.exports = {
 //   const drivers = [4941600];
 //   const end = [39.72999954223633, 39.70000076293945];
 //   const start = [40.66999816894531, 40.709999084472656];
+
+
+
+
+
+ // 'San Francisco' : {
+ //    lattitudes: [37.73, 37.83],
+ //    longitudes: [122.37, 122.47]
+ //  },
+
+ //  'Seattle' : {
+ //    lattitudes: [47.56, 47.66],
+ //    longitudes: [122.28, 122.38]
+ //  },
+ //  'Los Angeles' : {
+ //    lattitudes: [34, 35],
+ //    longitudes: [122.37, 122.47]
+ //  },
+ //  'Miami' : {
+ //    lattitudes: [25.71, 25.81],
+ //    longitudes: [80.14, 80.24]
+
+ //  },
+ //  'New York' : {
+ //    lattitudes: [40.66, 40.76],
+ //    longitudes: [73.96, 74.04]
+ //  }

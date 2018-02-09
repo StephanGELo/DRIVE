@@ -40,7 +40,7 @@ const generateDriverIds = function() {
 
 for (let k in cities) {
   for (let i = 0; i < 500000; i++) {
-    let start = [(Math.random() * (cities[k]['lattitudes'][1] - cities[k]['lattitudes'][0]) + cities[k]['lattitudes'][0]).toFixed(2) * 1, (Math.random() * (cities[k]['lattitudes'][1] - cities[k]['lattitudes'][0]) + cities[k]['lattitudes'][0]).toFixed(2) * 1];
+    let start = [(Math.random() * (cities[k]['lattitudes'][1] - cities[k]['lattitudes'][0]) + cities[k]['lattitudes'][0]).toFixed(2) * 1, (Math.random() * (cities[k]['longitudes'][1] - cities[k]['longitudes'][0]) + cities[k]['longitudes'][0]).toFixed(2) * 1];
     let time = (Math.random() * (timeFrame['jan02'] - timeFrame['jan01']) + timeFrame['jan01']).toFixed(0) * 1;
     //wstream.write(time + ';' + generateDriverIds() +';'+ JSON.stringify(start) + '\n');
   }
