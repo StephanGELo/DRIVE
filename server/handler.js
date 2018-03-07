@@ -1,13 +1,15 @@
 
 const data = require('../dataGeneration.js');
 const Koa = require('koa');
+const redis = require('redis');
 const bodyParser = require('koa-body-parser');
+const redisClient = require('../redis-server/redisCache.js');
+const db = require('../db-Cassandra/index.js');
 
 // app.use(bodyParser());
 const Router = require('koa-router');
 const http = require('http');
 const handler = require('./handler.js');
-const db = require('../db-Cassandra/index.js');
 const request = require('request-promise');
 const rawBody = require('raw-body');
 
@@ -80,29 +82,55 @@ const handlers = {
         console.log("In handlers @ line 15 newIndex=", newIndex);
         const aptDriver = drivers[newIndex];
         rideOffer.drivers = [aptDriver];
-      return rideOffer;
+        return rideOffer;
       });
     },
 
     // every 3600 seconds send a list of drivers to dispatch service
+
     getDriverToDispatch : async (ctx, next) => {
-      // console.log("you are in handler @ line 57 time=", ctx.params.time, ctx);
-      return db.getActiveDrivers(ctx.params.time).then((drivers) => {
-        if (drivers.length === 0) {
-        } else {
-          ctx.set('content-type', 'application/json');
-          ctx.response.statusCode = 200;
-          ctx.body = JSON.stringify(drivers);
+       console.log("you are in handler @ line 95 time=", ctx.params.time, ctx.response.status);
+      let time = ctx.params.time;
+      try {
+            redisClient.getActiveRedDrivers(time, (error, activeDrivers) => {
+              // console.log(" on line 103", activeDrivers)
+              if (activeDrivers === 0) {
+                // ctx.response.status = 200;
+                ctx.response.body = JSON.parse(activeDrivers);
 
-
-        }
-        next();
-      });
+              } else {
+                let drivers = db.getActiveDrivers(time);
+                console.log("activeDrivers on line 107=", drivers);
+                redisClient.setActiveRedDrivers(time, JSON.stringify(drivers));
+                // ctx.status = 200;
+                ctx.body = drivers;
+                next();
+              }
+            });
+          } catch (err) {
+              console.log('There is an error:', err.message);
+      };
     },
+
+    // TO BE USED BACK IF REDIS CLIENT IS NOT WORKING
+    // getDriverToDispatch : async (ctx, next) => {
+    //   // console.log("you are in handler @ line 57 time=", ctx.params.time, ctx);
+    //   return db.getActiveDrivers(ctx.params.time).then((drivers) => {
+    //     if (drivers.length === 0) {
+    //     } else {
+    //       ctx.set('content-type', 'application/json');
+    //       ctx.response.statusCode = 200;
+    //       ctx.body = JSON.stringify(drivers);
+    //     }
+    //     next();
+    //   });
+    // },
 
     // every 3600 seconds send pricing a list of active and inactive drivers
     getDriverStatusToPricing : async (ctx, next) => {
+      // console.log("on linei108 params are", ctx);
       let time = ctx.params.time;
+
       try {
         let activeDrivers = await db.getActiveDrivers(time);
         let inactiveDrivers = await db.getInactiveDrivers(time);
@@ -110,21 +138,21 @@ const handlers = {
       } catch (err) {
         console.log('There is an error:', err.message);
       };
-    },
-
-
+    }
   }, // end of GET
 
  POST: {
-    postRideOffersToDrivers: (ctx, next) => {
+    postRideOffersToDrivers: async (ctx, next) => {
       const rideOffers = handlers.GET.selectDriver(ctx.request.body);
 
       console.log("on line 119", rideOffers);
 
       try {
-        rideOffers.forEach((rideOffer) => {
+        rideOffers.map((rideOffer) => {
           db.saveRiderOffers(rideOffer);
         });
+        ctx.body = rideOffers;
+        ctx.status = 200;
 
       } catch (err) {
         console.log('There is an error:', err.message);
@@ -134,10 +162,37 @@ const handlers = {
   }, // end of POST
 
   PUT: {
-    updateDriverRecord: (ctx, next) => {
+    addToActiveDrivers: async (ctx, next) => {
+      const newDriver = ctx.request.body;
+      const activeDrivers = 'activedrivers';
+      const inActiveDrivers = 'inactivedrivers';
 
-    }
-  }
+       try {
+        console.log(activeDrivers);
+         db.deleteRecord(newDriver, activeDrivers);
+         db.createRecord(newDriver, activeDrivers);
+         db.deleteRecord(newDriver, inActiveDrivers);
+         ctx.body = `Driver ${newDriver.driverid} is active`;
+         console.log(ctx.body);
+
+      } catch (err) {
+        console.log('There is an error on line 145:', err.message);
+      };
+    },
+
+    addToInactiveDrivers: async (ctx, next) => {
+      const newDriver = ctx.request.body;
+       try {
+         db.createRecord(newDriver, inActiveDrivers);
+         db.deleteRecord(newDriver, activeDrivers);
+         ctx.body = `Driver ${{ driverid}} is inactive`;
+         console.log(ctx.body);
+
+       } catch (err) {
+        console.log('There is an error on line 158:', err.message);
+      };
+    },
+  } // end of PUT
 
 
 }

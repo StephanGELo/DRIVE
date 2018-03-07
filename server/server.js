@@ -26,10 +26,10 @@ router.get('/driverStatusToPricing/:time', handler.handlers.GET.getDriverStatusT
 router.post('/rideOffersToDrivers', handler.handlers.POST.postRideOffersToDrivers);
 
 // update driver location & time if already exists or add as new driver if not in database (as per Fred's comments)
-router.put('/driverlogin',handler.handlers.PUT.updateDriverRecord);
+router.put('/driverlogin',handler.handlers.PUT.addToActiveDrivers);
 
 // check if driver is in db as active, Delete from db if it is. Add driver as inactive.
-router.put('/driverlogOff',handler.handlers.PUT.updateDriverRecord);
+router.put('/driverlogOff',handler.handlers.PUT.addToInactiveDrivers);
 
 app
   .use(router.routes())

@@ -7,51 +7,41 @@ const client = new cassandra.Client({contactPoints: ['127.0.0.1'], keyspace: 'dr
 // const queryActiveDrId = 'SELECT * FROM activedrivers WHERE driverid= ?';
 
 const getActiveDrivers = (time) => {
-  const param = parseInt(time);
-  console.log("on line 19 param is =", param);
-  return client.execute(`SELECT * from activedrivers WHERE time=${time}`).then((drivers) => {
-
-    // console.log("drivers are ", drivers);
+  const param =  [ parseInt(time) ];
+  const query = `SELECT * from activedrivers WHERE time=${time}`;
+  return client.execute(query).then((drivers) => {
     return drivers.rows;
   });
 }
 
 const getInactiveDrivers = (time) => {
   const param = parseInt(time);
-  console.log("on line 19 param is =", param);
+  // console.log("on line 19 param is =", param);
   return client.execute(`SELECT * from inActiveDrivers WHERE time=${time}`).then((drivers) => {
-
-    // console.log("drivers are ", drivers);
     return drivers.rows;
   });
 }
 
 const saveRiderOffers = (rideOffer) => {
   const { riderid, time, drivers, end, start } = rideOffer;
-  // console.log("here in saveRiderOffer", rideOffer);
   const query = 'INSERT INTO rideoffers (riderid, time, drivers, end, start) VALUES (?, ?, ?, ?, ?) IF NOT EXISTS;'
   const params = [riderid, time, drivers, end, start]
   client.execute(query, params, {prepare : true})
 }
 
 const deleteRecord = (driverid, table) => {
-  const queryToDelete = 'DELETE FROM ? WHERE driverid = ?';
-  const params = [ driverid, table ];
+  console.log(table);
+  const queryToDelete = `DELETE FROM ${table} WHERE driverid=? IF EXISTS`;
+  const params = [ driverid ];
   client.execute(queryToDelete, params, { prepare : true });
 }
 
 const createRecord = (driverObj, table) => {
   const { time, driverid, start } = driverObj;
-  // console.log("here in saveRiderOffer", rideOffer);
-  const query = 'INSERT INTO ? (time, driverid, start) VALUES (?, ?, ?) IF NOT EXISTS;'
+  const query = `INSERT INTO ${table} (time, driverid, start) VALUES (?, ?, ?) IF NOT EXISTS;`
   const params = [ time, driverid, start ];
   client.execute(query, params, { prepare : true });
 }
-
-const updateDriverRecord = () => {
-
-}
-
 
 module.exports = {
   saveRiderOffers,

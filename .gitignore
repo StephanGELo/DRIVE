@@ -39,3 +39,7 @@ node_modules/
 bower_components/
 driversData/
 newrelic.js
+dump.rdb
+redis-server/dump.rdb
+newrelic_agent.log
+.nyc_output/
